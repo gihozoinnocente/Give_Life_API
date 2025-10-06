@@ -10,7 +10,7 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 router.use(`/${API_VERSION}/donors`, donorRoutes);
 
 // Base API info
-router.get('/', (req, res) => {
+router.get('/', (_req, res) => {
   res.json({
     status: 'success',
     message: 'Blood Donation API',

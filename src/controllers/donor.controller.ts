@@ -1,8 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 
 export class DonorController {
+  constructor() {
+    // Bind methods to ensure correct 'this' context
+    this.getAllDonors = this.getAllDonors.bind(this);
+    this.getDonorById = this.getDonorById.bind(this);
+    this.createDonor = this.createDonor.bind(this);
+    this.updateDonor = this.updateDonor.bind(this);
+    this.deleteDonor = this.deleteDonor.bind(this);
+  }
+
   // Get all donors
-  async getAllDonors(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getAllDonors(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       // TODO: Implement database query
       res.status(200).json({

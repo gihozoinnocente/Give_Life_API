@@ -20,7 +20,7 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Blood Donation API is running',
@@ -32,7 +32,7 @@ app.get('/health', (req, res) => {
 app.use('/api', routes);
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     status: 'error',
     message: 'Route not found',
