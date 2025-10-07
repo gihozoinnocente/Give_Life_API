@@ -88,6 +88,15 @@ jobs:
           echo "🚀 Deployment to Railway completed successfully!"
           echo "📦 Service: ${{ secrets.RAILWAY_SERVICE_NAME || 'web' }}"
           echo "🌐 Check your Railway dashboard for deployment details"
+          echo ""
+          echo "📚 API Documentation available at:"
+          echo "   👉 https://your-service.railway.app/api-docs"
+          echo ""
+          echo "🏠 Welcome endpoint:"
+          echo "   👉 https://your-service.railway.app/"
+          echo ""
+          echo "✅ Health check:"
+          echo "   👉 https://your-service.railway.app/health"
 
   # Security audit job
   security-audit:

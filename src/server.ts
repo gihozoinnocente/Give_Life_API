@@ -4,31 +4,28 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import routes from './routes';
+import healthRoutes from './routes/health.routes';
+import swaggerRoutes from './routes/swagger.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 // Load environment variables
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3300;
 
 // Middleware
-app.use(helmet()); // Security headers
-app.use(cors()); // Enable CORS
-app.use(morgan('dev')); // Logging
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable for Swagger UI
+}));
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
-app.get('/health', (_req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Blood Donation API is running',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// API Routes
+// Routes
+app.use('/', healthRoutes);
+app.use('/api-docs', swaggerRoutes);
 app.use('/api', routes);
 
 // 404 handler
