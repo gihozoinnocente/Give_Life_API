@@ -8,10 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts",
-    "test": "jest",
-    "railway:build": "npm install && npm run build",
-    "railway:start": "npm start",
-    "postinstall": "npm run build"
+    "test": "jest"
   },
   "keywords": ["blood-donation", "api", "nodejs", "express"],
   "author": "",

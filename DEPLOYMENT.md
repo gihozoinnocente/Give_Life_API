@@ -182,6 +182,7 @@ Expected response:
 - **Check logs** in GitHub Actions or Railway dashboard
 - Ensure all dependencies are in `package.json`
 - Verify TypeScript compiles locally: `npm run build`
+- **Nixpacks errors**: If you see Nix environment errors, ensure `nixpacks.toml` uses `nodejs_20` (not `nodejs-20_x`)
 
 #### 2. Deployment Fails
 - **Verify Railway token** is correct in GitHub secrets
