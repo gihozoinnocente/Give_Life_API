@@ -105,6 +105,29 @@ NODE_ENV=development
 API_VERSION=v1
 ```
 
+## 🚀 Deployment
+
+This project includes automated CI/CD pipeline for Railway deployment.
+
+### Quick Deploy to Railway
+
+1. **Fork/Clone this repository**
+2. **Create a Railway account** at [railway.app](https://railway.app)
+3. **Connect your GitHub repository** to Railway
+4. **Configure environment variables** in Railway dashboard
+5. **Push to main branch** - Automatic deployment via GitHub Actions!
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### CI/CD Features
+
+- ✅ Automated testing on push
+- ✅ TypeScript build validation
+- ✅ Security audits
+- ✅ Multi-version Node.js testing (18.x, 20.x)
+- ✅ Automatic deployment to Railway on main branch
+- ✅ Health check monitoring
+
 ## 🚧 Next Steps
 
 - [ ] Add database integration (PostgreSQL, MongoDB, etc.)
