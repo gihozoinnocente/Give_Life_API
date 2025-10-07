@@ -81,12 +81,12 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.Give_Life_Api_Token }}
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'Give_Life_Api' }}
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'web' }}
       
       - name: Deployment notification
         run: |
           echo "🚀 Deployment to Railway completed successfully!"
-          echo "📦 Service: ${{ secrets.RAILWAY_SERVICE_NAME || 'Give_Life_Api' }}"
+          echo "📦 Service: ${{ secrets.RAILWAY_SERVICE_NAME || 'web' }}"
           echo "🌐 Check your Railway dashboard for deployment details"
 
   # Security audit job
