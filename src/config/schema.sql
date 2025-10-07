@@ -99,21 +99,27 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for updated_at
+-- Create triggers for updated_at (drop if exists first)
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_donor_profiles_updated_at ON donor_profiles;
 CREATE TRIGGER update_donor_profiles_updated_at BEFORE UPDATE ON donor_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_hospital_profiles_updated_at ON hospital_profiles;
 CREATE TRIGGER update_hospital_profiles_updated_at BEFORE UPDATE ON hospital_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_admin_profiles_updated_at ON admin_profiles;
 CREATE TRIGGER update_admin_profiles_updated_at BEFORE UPDATE ON admin_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_rbc_profiles_updated_at ON rbc_profiles;
 CREATE TRIGGER update_rbc_profiles_updated_at BEFORE UPDATE ON rbc_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_ministry_profiles_updated_at ON ministry_profiles;
 CREATE TRIGGER update_ministry_profiles_updated_at BEFORE UPDATE ON ministry_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
