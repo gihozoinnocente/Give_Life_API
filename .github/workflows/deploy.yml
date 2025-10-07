@@ -80,7 +80,7 @@ jobs:
       
       - name: Deploy to Railway
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.Give_Life_Api_Token }}
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'blood-donation-api' }}
       
       - name: Deployment notification
