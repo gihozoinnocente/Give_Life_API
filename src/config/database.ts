@@ -22,7 +22,10 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+  // Don't exit in production - just log the error
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Exiting due to database error (development mode)');
+  }
 });
 
 // Query helper function
