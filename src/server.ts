@@ -7,6 +7,7 @@ import routes from './routes';
 import healthRoutes from './routes/health.routes';
 import swaggerRoutes from './routes/swagger.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { initializeDatabase } from './config/initDatabase';
 
 // Load environment variables
 dotenv.config();
@@ -39,11 +40,25 @@ app.use((_req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🏥 Blood Donation API ready to accept requests`);
-});
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Initialize database schema
+    await initializeDatabase();
+    
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🏥 Blood Donation API ready to accept requests`);
+      console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;
