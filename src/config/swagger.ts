@@ -37,6 +37,22 @@ For questions or support, please contact our team.
       name: 'Health',
       description: 'API health check endpoints',
     },
+    {
+      name: 'Authentication',
+      description: 'User registration and authentication endpoints',
+    },
+    {
+      name: 'Donors',
+      description: 'Blood donor management and search endpoints',
+    },
+    {
+      name: 'Hospitals',
+      description: 'Hospital management and search endpoints',
+    },
+    {
+      name: 'Notifications',
+      description: 'Blood request notifications and management endpoints',
+    },
   ],
   components: {
     securitySchemes: {

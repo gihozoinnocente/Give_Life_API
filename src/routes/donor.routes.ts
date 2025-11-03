@@ -53,87 +53,57 @@ router.get('/:id', donorController.getDonorById);
 
 /**
  * @swagger
- * /api/donors:
- *   post:
- *     summary: Register a new blood donor
- *     description: Create a new blood donor profile
+ * /api/donors/search:
+ *   get:
+ *     summary: Search donors with filters
+ *     description: Search for blood donors using various filters
  *     tags: [Donors]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - bloodType
- *               - contact
- *             properties:
- *               name:
- *                 type: string
- *                 example: John Doe
- *               bloodType:
- *                 type: string
- *                 example: O+
- *               contact:
- *                 type: string
- *                 example: +250788123456
+ *     parameters:
+ *       - in: query
+ *         name: bloodGroup
+ *         schema:
+ *           type: string
+ *           enum: [A+, A-, B+, B-, AB+, AB-, O+, O-]
+ *       - in: query
+ *         name: district
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: minAge
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: maxAge
+ *         schema:
+ *           type: integer
  *     responses:
- *       201:
- *         description: Donor created successfully
- *       400:
- *         description: Invalid input
+ *       200:
+ *         description: Donors retrieved successfully
  */
-router.post('/', donorController.createDonor);
+router.get('/search', donorController.searchDonors);
 
 /**
  * @swagger
- * /api/donors/{id}:
- *   put:
- *     summary: Update donor information
- *     description: Update an existing blood donor's profile
+ * /api/donors/blood-group/{bloodGroup}:
+ *   get:
+ *     summary: Get donors by blood group
+ *     description: Retrieve all donors with a specific blood group
  *     tags: [Donors]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: bloodGroup
  *         required: true
  *         schema:
  *           type: string
- *         description: The donor ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
+ *           enum: [A+, A-, B+, B-, AB+, AB-, O+, O-]
  *     responses:
  *       200:
- *         description: Donor updated successfully
- *       404:
- *         description: Donor not found
+ *         description: Donors retrieved successfully
  */
-router.put('/:id', donorController.updateDonor);
-
-/**
- * @swagger
- * /api/donors/{id}:
- *   delete:
- *     summary: Delete a donor
- *     description: Remove a blood donor from the system
- *     tags: [Donors]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: The donor ID
- *     responses:
- *       200:
- *         description: Donor deleted successfully
- *       404:
- *         description: Donor not found
- */
-router.delete('/:id', donorController.deleteDonor);
+router.get('/blood-group/:bloodGroup', donorController.getDonorsByBloodGroup);
 
 export default router;
