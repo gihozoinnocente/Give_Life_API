@@ -1,25 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
+import { DonorService } from '../services/donor.service';
+import { BadgeService } from '../services/badge.service';
+import { DonorSearchFilters } from '../types';
 
 export class DonorController {
+  private donorService: DonorService;
+  private badgeService: BadgeService;
+
   constructor() {
+    this.donorService = new DonorService();
+    this.badgeService = new BadgeService();
     // Bind methods to ensure correct 'this' context
     this.getAllDonors = this.getAllDonors.bind(this);
     this.getDonorById = this.getDonorById.bind(this);
-    this.createDonor = this.createDonor.bind(this);
-    this.updateDonor = this.updateDonor.bind(this);
-    this.deleteDonor = this.deleteDonor.bind(this);
+    this.searchDonors = this.searchDonors.bind(this);
+    this.getDonorsByBloodGroup = this.getDonorsByBloodGroup.bind(this);
+    this.getBadges = this.getBadges.bind(this);
+    this.recomputeBadges = this.recomputeBadges.bind(this);
   }
 
   // Get all donors
   async getAllDonors(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TODO: Implement database query
+      const donors = await this.donorService.getAllDonors();
+      
       res.status(200).json({
         status: 'success',
         message: 'Retrieved all donors',
-        data: {
-          donors: [],
-        },
+        data: donors,
       });
     } catch (error) {
       next(error);
@@ -30,67 +38,81 @@ export class DonorController {
   async getDonorById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
+      const donor = await this.donorService.getDonorById(id);
       
-      // TODO: Implement database query
       res.status(200).json({
         status: 'success',
         message: `Retrieved donor with ID: ${id}`,
-        data: {
-          donor: null,
-        },
+        data: donor,
       });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Donor not found') {
+        res.status(404).json({
+          status: 'error',
+          message: error.message,
+        });
+        return;
+      }
       next(error);
     }
   }
 
-  // Create new donor
-  async createDonor(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Search donors with filters
+  async searchDonors(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const donorData = req.body;
-      
-      // TODO: Implement validation and database insertion
-      res.status(201).json({
-        status: 'success',
-        message: 'Donor created successfully',
-        data: {
-          donor: donorData,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
+      const filters: DonorSearchFilters = {
+        bloodGroup: req.query.bloodGroup as any,
+        district: req.query.district as string,
+        state: req.query.state as string,
+        minAge: req.query.minAge ? parseInt(req.query.minAge as string) : undefined,
+        maxAge: req.query.maxAge ? parseInt(req.query.maxAge as string) : undefined,
+      };
 
-  // Update donor
-  async updateDonor(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { id } = req.params;
-      const updateData = req.body;
+      const donors = await this.donorService.searchDonors(filters);
       
-      // TODO: Implement database update
       res.status(200).json({
         status: 'success',
-        message: `Donor ${id} updated successfully`,
-        data: {
-          donor: updateData,
-        },
+        message: 'Donors retrieved successfully',
+        data: donors,
       });
     } catch (error) {
       next(error);
     }
   }
 
-  // Delete donor
-  async deleteDonor(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Get donors by blood group
+  async getDonorsByBloodGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const { bloodGroup } = req.params;
+      const donors = await this.donorService.getDonorsByBloodGroup(bloodGroup as any);
       
-      // TODO: Implement database deletion
       res.status(200).json({
         status: 'success',
-        message: `Donor ${id} deleted successfully`,
+        message: `Retrieved donors with blood group: ${bloodGroup}`,
+        data: donors,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get donor badges (earned + in-progress)
+  async getBadges(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { donorId } = req.params as any;
+      const data = await this.badgeService.computeProgress(donorId);
+      res.status(200).json({ status: 'success', data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Recompute and award new badges for a donor
+  async recomputeBadges(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { donorId } = req.params as any;
+      const newlyAwarded = await this.badgeService.awardNewBadges(donorId);
+      res.status(200).json({ status: 'success', data: { awarded: newlyAwarded } });
     } catch (error) {
       next(error);
     }

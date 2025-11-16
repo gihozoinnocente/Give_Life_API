@@ -22,6 +22,7 @@ export class AuthController {
     this.registerMinistry = this.registerMinistry.bind(this);
     this.login = this.login.bind(this);
     this.getProfile = this.getProfile.bind(this);
+    this.updateProfile = this.updateProfile.bind(this);
   }
 
   // Register Donor
@@ -273,8 +274,12 @@ export class AuthController {
     try {
       const data: LoginDTO = req.body;
 
+      // Log login attempt for debugging
+      console.log('Login attempt:', { email: data.email, hasPassword: !!data.password });
+
       // Validate required fields
       if (!data.email || !data.password) {
+        console.log('Login validation failed: Missing email or password');
         res.status(400).json({
           status: 'error',
           message: 'Email and password are required',
@@ -328,6 +333,38 @@ export class AuthController {
       res.status(200).json({
         status: 'success',
         message: 'Profile retrieved successfully',
+        data: profile,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update user profile
+  async updateProfile(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          status: 'error',
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const updateData = req.body;
+      const profile = await this.authService.updateUserProfile(
+        req.user.userId,
+        req.user.role,
+        updateData
+      );
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Profile updated successfully',
         data: profile,
       });
     } catch (error) {

@@ -284,4 +284,27 @@ router.post('/login', validateLogin, authController.login);
  */
 router.get('/profile', authenticateToken, authController.getProfile);
 
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update current user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Fields to update (varies by user role)
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Authentication required
+ */
+router.put('/profile', authenticateToken, authController.updateProfile);
+
 export default router;

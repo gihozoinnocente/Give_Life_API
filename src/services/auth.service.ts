@@ -144,14 +144,17 @@ export class AuthService {
 
       await query(
         `INSERT INTO hospital_profiles 
-         (user_id, hospital_name, address, head_of_hospital, phone_number) 
-         VALUES ($1, $2, $3, $4, $5)`,
+         (user_id, hospital_name, address, head_of_hospital, phone_number, district, state, pin_code) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           user.id,
           data.hospitalName,
           data.address,
           data.headOfHospital,
           data.phoneNumber,
+          data.district || null,
+          data.state || null,
+          data.pinCode || null,
         ]
       );
 
@@ -374,12 +377,11 @@ export class AuthService {
       role: user.role,
     });
 
+    // Get full user profile
+    const fullProfile = await this.getUserProfile(user.id, user.role);
+
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
+      user: fullProfile,
       token,
     };
   }
@@ -403,7 +405,8 @@ export class AuthService {
       case UserRole.HOSPITAL:
         profileQuery = `
           SELECT u.id, u.email, u.role, u.is_active, u.created_at,
-                 hp.hospital_name, hp.address, hp.head_of_hospital, hp.phone_number
+                 hp.hospital_name, hp.address, hp.head_of_hospital, hp.phone_number,
+                 hp.district, hp.state, hp.pin_code
           FROM users u
           JOIN hospital_profiles hp ON u.id = hp.user_id
           WHERE u.id = $1
@@ -446,6 +449,163 @@ export class AuthService {
       throw new Error('User profile not found');
     }
 
-    return result.rows[0];
+    const profile = result.rows[0];
+
+    // Convert snake_case to camelCase for frontend
+    const formattedProfile: any = {
+      id: profile.id,
+      email: profile.email,
+      role: profile.role,
+      isActive: profile.is_active,
+      createdAt: profile.created_at,
+    };
+
+    // Add role-specific fields
+    if (role === UserRole.DONOR) {
+      formattedProfile.firstName = profile.first_name;
+      formattedProfile.lastName = profile.last_name;
+      formattedProfile.phoneNumber = profile.phone_number;
+      formattedProfile.address = profile.address;
+      formattedProfile.age = profile.age;
+      formattedProfile.bloodGroup = profile.blood_group;
+      formattedProfile.district = profile.district;
+      formattedProfile.state = profile.state;
+      formattedProfile.pinCode = profile.pin_code;
+      formattedProfile.lastDonationMonth = profile.last_donation_month;
+      formattedProfile.lastDonationYear = profile.last_donation_year;
+    } else if (role === UserRole.HOSPITAL) {
+      formattedProfile.hospitalName = profile.hospital_name;
+      formattedProfile.address = profile.address;
+      formattedProfile.headOfHospital = profile.head_of_hospital;
+      formattedProfile.phoneNumber = profile.phone_number;
+      formattedProfile.district = profile.district;
+      formattedProfile.state = profile.state;
+      formattedProfile.pinCode = profile.pin_code;
+    } else if (role === UserRole.ADMIN) {
+      formattedProfile.firstName = profile.first_name;
+      formattedProfile.lastName = profile.last_name;
+      formattedProfile.phoneNumber = profile.phone_number;
+    } else if (role === UserRole.RBC) {
+      formattedProfile.officeName = profile.office_name;
+      formattedProfile.contactPerson = profile.contact_person;
+      formattedProfile.phoneNumber = profile.phone_number;
+      formattedProfile.address = profile.address;
+    } else if (role === UserRole.MINISTRY) {
+      formattedProfile.departmentName = profile.department_name;
+      formattedProfile.contactPerson = profile.contact_person;
+      formattedProfile.phoneNumber = profile.phone_number;
+      formattedProfile.address = profile.address;
+    }
+
+    return formattedProfile;
+  }
+
+  // Update user profile
+  async updateUserProfile(
+    userId: string,
+    role: UserRole,
+    updateData: any
+  ): Promise<any> {
+    let updateQuery = '';
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    switch (role) {
+      case UserRole.DONOR:
+        const donorFields: string[] = [];
+        if (updateData.firstName) {
+          donorFields.push(`first_name = $${paramIndex++}`);
+          params.push(updateData.firstName);
+        }
+        if (updateData.lastName) {
+          donorFields.push(`last_name = $${paramIndex++}`);
+          params.push(updateData.lastName);
+        }
+        if (updateData.phoneNumber) {
+          donorFields.push(`phone_number = $${paramIndex++}`);
+          params.push(updateData.phoneNumber);
+        }
+        if (updateData.address) {
+          donorFields.push(`address = $${paramIndex++}`);
+          params.push(updateData.address);
+        }
+        if (updateData.age) {
+          donorFields.push(`age = $${paramIndex++}`);
+          params.push(updateData.age);
+        }
+        if (updateData.bloodGroup) {
+          donorFields.push(`blood_group = $${paramIndex++}`);
+          params.push(updateData.bloodGroup);
+        }
+        if (updateData.district) {
+          donorFields.push(`district = $${paramIndex++}`);
+          params.push(updateData.district);
+        }
+        if (updateData.state) {
+          donorFields.push(`state = $${paramIndex++}`);
+          params.push(updateData.state);
+        }
+        if (updateData.pinCode) {
+          donorFields.push(`pin_code = $${paramIndex++}`);
+          params.push(updateData.pinCode);
+        }
+        if (updateData.lastDonationMonth) {
+          donorFields.push(`last_donation_month = $${paramIndex++}`);
+          params.push(updateData.lastDonationMonth);
+        }
+        if (updateData.lastDonationYear) {
+          donorFields.push(`last_donation_year = $${paramIndex++}`);
+          params.push(updateData.lastDonationYear);
+        }
+
+        if (donorFields.length > 0) {
+          updateQuery = `UPDATE donor_profiles SET ${donorFields.join(', ')} WHERE user_id = $1`;
+          await query(updateQuery, params);
+        }
+        break;
+
+      case UserRole.HOSPITAL:
+        const hospitalFields: string[] = [];
+        if (updateData.hospitalName) {
+          hospitalFields.push(`hospital_name = $${paramIndex++}`);
+          params.push(updateData.hospitalName);
+        }
+        if (updateData.address) {
+          hospitalFields.push(`address = $${paramIndex++}`);
+          params.push(updateData.address);
+        }
+        if (updateData.headOfHospital) {
+          hospitalFields.push(`head_of_hospital = $${paramIndex++}`);
+          params.push(updateData.headOfHospital);
+        }
+        if (updateData.phoneNumber) {
+          hospitalFields.push(`phone_number = $${paramIndex++}`);
+          params.push(updateData.phoneNumber);
+        }
+        if (updateData.district) {
+          hospitalFields.push(`district = $${paramIndex++}`);
+          params.push(updateData.district);
+        }
+        if (updateData.state) {
+          hospitalFields.push(`state = $${paramIndex++}`);
+          params.push(updateData.state);
+        }
+        if (updateData.pinCode) {
+          hospitalFields.push(`pin_code = $${paramIndex++}`);
+          params.push(updateData.pinCode);
+        }
+
+        if (hospitalFields.length > 0) {
+          updateQuery = `UPDATE hospital_profiles SET ${hospitalFields.join(', ')} WHERE user_id = $1`;
+          await query(updateQuery, params);
+        }
+        break;
+
+      default:
+        throw new Error('Profile update not supported for this user role');
+    }
+
+    // Return updated profile
+    return this.getUserProfile(userId, role);
   }
 }
