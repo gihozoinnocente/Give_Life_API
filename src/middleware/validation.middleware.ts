@@ -174,7 +174,7 @@ export const validateMinistryRegistration = [
 
 // Login validation
 export const validateLogin = [
-  body('email').isEmail().withMessage('Valid email is required'),
+  body('email').notEmpty().withMessage('Email or username is required'),
   body('password').notEmpty().withMessage('Password is required'),
   handleValidationErrors,
 ];

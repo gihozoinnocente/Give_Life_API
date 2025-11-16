@@ -58,4 +58,142 @@ router.get('/search', hospitalController.searchHospitals);
  */
 router.get('/:id', hospitalController.getHospitalById);
 
+/**
+ * @swagger
+ * /api/hospitals/{id}/donors:
+ *   get:
+ *     summary: Get donors who opted-in for a hospital
+ *     tags: [Hospitals]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Donors retrieved successfully
+ */
+router.get('/:id/donors', hospitalController.getHospitalDonors);
+
+/**
+ * @swagger
+ * /api/hospitals/{id}/recognition:
+ *   get:
+ *     summary: Get donor recognition stats for a hospital
+ *     tags: [Hospitals]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Recognition stats retrieved successfully
+ */
+router.get('/:id/recognition', hospitalController.getRecognition);
+
+/**
+ * @swagger
+ * /api/hospitals/{id}/health-records:
+ *   get:
+ *     summary: Get health records for a hospital
+ *     tags: [Hospitals]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: donorId
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Health records retrieved successfully
+ */
+router.get('/:id/health-records', hospitalController.getHealthRecords);
+
+/**
+ * @swagger
+ * /api/hospitals/{id}/health-records:
+ *   post:
+ *     summary: Create a new health record for a donor at this hospital
+ *     tags: [Hospitals]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               donorId:
+ *                 type: string
+ *               patientName:
+ *                 type: string
+ *               bloodType:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               lastVisit:
+ *                 type: string
+ *                 format: date-time
+ *               age:
+ *                 type: number
+ *               weight:
+ *                 type: number
+ *               temperature:
+ *                 type: number
+ *               bloodPressure:
+ *                 type: string
+ *               heartRate:
+ *                 type: number
+ *               hemoglobin:
+ *                 type: number
+ *               allergies:
+ *                 type: string
+ *               medications:
+ *                 type: string
+ *               chronicConditions:
+ *                 type: string
+ *               hospitalNotes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Health record created successfully
+ */
+router.post('/:id/health-records', hospitalController.createHealthRecord);
+
+/**
+ * @swagger
+ * /api/hospitals/{hospitalId}/opt-in:
+ *   get:
+ *     summary: Donor opt-in confirmation via email link
+ *     tags: [Hospitals]
+ *     parameters:
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Donor opt-in recorded
+ */
+router.get('/:hospitalId/opt-in', hospitalController.optInDonor);
+
 export default router;

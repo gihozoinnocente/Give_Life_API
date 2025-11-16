@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS hospital_profiles (
     address TEXT NOT NULL,
     head_of_hospital VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20) NOT NULL,
+    district VARCHAR(100),
+    state VARCHAR(100),
+    pin_code VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -102,6 +105,47 @@ $$ language 'plpgsql';
 -- Create triggers for updated_at (drop if exists first)
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Events table (for community)
+CREATE TABLE IF NOT EXISTS events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    date DATE NOT NULL,
+    time VARCHAR(50) NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    organizer VARCHAR(255) NOT NULL,
+    attendees INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
+CREATE INDEX IF NOT EXISTS idx_events_organizer ON events(organizer);
+
+DROP TRIGGER IF EXISTS update_events_updated_at ON events;
+CREATE TRIGGER update_events_updated_at BEFORE UPDATE ON events
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Community posts table
+CREATE TABLE IF NOT EXISTS community_posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    type VARCHAR(20) NOT NULL DEFAULT 'story',
+    likes INTEGER NOT NULL DEFAULT 0,
+    comments INTEGER NOT NULL DEFAULT 0,
+    image TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_posts_author_id ON community_posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_community_posts_created_at ON community_posts(created_at);
+
+DROP TRIGGER IF EXISTS update_community_posts_updated_at ON community_posts;
+CREATE TRIGGER update_community_posts_updated_at BEFORE UPDATE ON community_posts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 DROP TRIGGER IF EXISTS update_donor_profiles_updated_at ON donor_profiles;
@@ -224,6 +268,27 @@ DROP TRIGGER IF EXISTS update_donations_updated_at ON donations;
 CREATE TRIGGER update_donations_updated_at BEFORE UPDATE ON donations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Donor badges table (earned achievements)
+CREATE TABLE IF NOT EXISTS donor_badges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    donor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    badge_key VARCHAR(100) NOT NULL,
+    earned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    meta JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_donor_badge UNIQUE (donor_id, badge_key)
+);
+
+-- Indexes for donor_badges
+CREATE INDEX IF NOT EXISTS idx_donor_badges_donor_id ON donor_badges(donor_id);
+CREATE INDEX IF NOT EXISTS idx_donor_badges_badge_key ON donor_badges(badge_key);
+
+-- Trigger for donor_badges updated_at
+DROP TRIGGER IF EXISTS update_donor_badges_updated_at ON donor_badges;
+CREATE TRIGGER update_donor_badges_updated_at BEFORE UPDATE ON donor_badges
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Blood inventory table
 CREATE TABLE IF NOT EXISTS blood_inventory (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -245,4 +310,52 @@ CREATE INDEX IF NOT EXISTS idx_blood_inventory_blood_type ON blood_inventory(blo
 -- Trigger for blood_inventory updated_at
 DROP TRIGGER IF EXISTS update_blood_inventory_updated_at ON blood_inventory;
 CREATE TRIGGER update_blood_inventory_updated_at BEFORE UPDATE ON blood_inventory
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Hospital-Donor memberships (donor opt-in to be discoverable by a hospital)
+CREATE TABLE IF NOT EXISTS hospital_donor_memberships (
+    donor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    hospital_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    consented BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (donor_id, hospital_id)
+);
+
+-- Indexes for memberships
+CREATE INDEX IF NOT EXISTS idx_memberships_hospital_id ON hospital_donor_memberships(hospital_id);
+CREATE INDEX IF NOT EXISTS idx_memberships_donor_id ON hospital_donor_memberships(donor_id);
+
+-- Hospital health records table (per-donor clinical information captured by hospitals)
+CREATE TABLE IF NOT EXISTS hospital_health_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    hospital_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    donor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    patient_name TEXT,
+    blood_type VARCHAR(5),
+    status VARCHAR(20) DEFAULT 'stable',
+    last_visit TIMESTAMP,
+    age INTEGER,
+    weight NUMERIC,
+    height NUMERIC,
+    temperature NUMERIC,
+    blood_pressure TEXT,
+    heart_rate INTEGER,
+    hemoglobin NUMERIC,
+    average_hemoglobin NUMERIC,
+    allergies TEXT,
+    medications TEXT,
+    chronic_conditions TEXT,
+    hospital_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for hospital_health_records
+CREATE INDEX IF NOT EXISTS idx_hospital_health_records_hospital_id ON hospital_health_records(hospital_id);
+CREATE INDEX IF NOT EXISTS idx_hospital_health_records_donor_id ON hospital_health_records(donor_id);
+CREATE INDEX IF NOT EXISTS idx_hospital_health_records_status ON hospital_health_records(status);
+
+-- Trigger for hospital_health_records updated_at
+DROP TRIGGER IF EXISTS update_hospital_health_records_updated_at ON hospital_health_records;
+CREATE TRIGGER update_hospital_health_records_updated_at BEFORE UPDATE ON hospital_health_records
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

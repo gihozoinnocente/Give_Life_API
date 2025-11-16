@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database';
-import { CreateBloodRequestDTO, UpdateBloodRequestDTO } from '../types';
+import { UpdateBloodRequestDTO } from '../types';
 
 export class RequestController {
   /**
@@ -102,25 +102,67 @@ export class RequestController {
    */
   async createRequest(req: Request, res: Response): Promise<void> {
     try {
-      const requestData: CreateBloodRequestDTO = req.body;
+      const requestData: any = req.body as any;
       const id = uuidv4();
+
+      // Fetch hospital profile to derive name and location
+      const hospitalId = requestData.hospitalId;
+      const hp = await pool.query(
+        `SELECT hospital_name, address FROM hospital_profiles WHERE user_id = $1`,
+        [hospitalId]
+      );
+
+      if (!hp.rows || hp.rows.length === 0) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Hospital profile not found for the provided hospitalId',
+        });
+        return;
+      }
+      const hospital_name = hp.rows[0].hospital_name;
+      const location = hp.rows[0].address;
+
+      // Basic validation per schema
+      const required = ['bloodType', 'unitsNeeded', 'urgency', 'contactPerson', 'contactPhone', 'expiryDate'];
+      for (const field of required) {
+        if (
+          requestData[field] === undefined ||
+          requestData[field] === null ||
+          (typeof requestData[field] === 'string' && requestData[field].trim() === '')
+        ) {
+          res.status(400).json({ status: 'error', message: `Missing required field: ${field}` });
+          return;
+        }
+      }
+      const unitsNum = parseInt(requestData.unitsNeeded, 10);
+      if (isNaN(unitsNum) || unitsNum <= 0) {
+        res.status(400).json({ status: 'error', message: 'unitsNeeded must be a positive integer' });
+        return;
+      }
+      const allowedUrgency = ['critical', 'urgent', 'normal'];
+      if (!allowedUrgency.includes(String(requestData.urgency).toLowerCase())) {
+        res.status(400).json({ status: 'error', message: 'Invalid urgency value' });
+        return;
+      }
 
       const result = await pool.query(
         `INSERT INTO blood_requests 
-         (id, hospital_id, patient_name, blood_type, units, urgency, status, contact_person, contact_phone, notes, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+         (id, hospital_id, hospital_name, blood_type, units_needed, urgency, patient_condition, contact_person, contact_phone, location, additional_notes, expiry_date, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active', NOW(), NOW())
          RETURNING *`,
         [
           id,
-          requestData.hospitalId,
-          requestData.patientName,
+          hospitalId,
+          hospital_name,
           requestData.bloodType,
-          requestData.units,
+          unitsNum,
           requestData.urgency,
-          'pending',
+          requestData.patientCondition || 'N/A',
           requestData.contactPerson,
           requestData.contactPhone,
-          requestData.notes || null,
+          location,
+          requestData.additionalNotes || null,
+          requestData.expiryDate || null,
         ]
       );
 

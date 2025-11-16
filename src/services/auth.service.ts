@@ -144,14 +144,17 @@ export class AuthService {
 
       await query(
         `INSERT INTO hospital_profiles 
-         (user_id, hospital_name, address, head_of_hospital, phone_number) 
-         VALUES ($1, $2, $3, $4, $5)`,
+         (user_id, hospital_name, address, head_of_hospital, phone_number, district, state, pin_code) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           user.id,
           data.hospitalName,
           data.address,
           data.headOfHospital,
           data.phoneNumber,
+          data.district || null,
+          data.state || null,
+          data.pinCode || null,
         ]
       );
 
@@ -402,7 +405,8 @@ export class AuthService {
       case UserRole.HOSPITAL:
         profileQuery = `
           SELECT u.id, u.email, u.role, u.is_active, u.created_at,
-                 hp.hospital_name, hp.address, hp.head_of_hospital, hp.phone_number
+                 hp.hospital_name, hp.address, hp.head_of_hospital, hp.phone_number,
+                 hp.district, hp.state, hp.pin_code
           FROM users u
           JOIN hospital_profiles hp ON u.id = hp.user_id
           WHERE u.id = $1
@@ -474,6 +478,9 @@ export class AuthService {
       formattedProfile.address = profile.address;
       formattedProfile.headOfHospital = profile.head_of_hospital;
       formattedProfile.phoneNumber = profile.phone_number;
+      formattedProfile.district = profile.district;
+      formattedProfile.state = profile.state;
+      formattedProfile.pinCode = profile.pin_code;
     } else if (role === UserRole.ADMIN) {
       formattedProfile.firstName = profile.first_name;
       formattedProfile.lastName = profile.last_name;
@@ -574,6 +581,18 @@ export class AuthService {
         if (updateData.phoneNumber) {
           hospitalFields.push(`phone_number = $${paramIndex++}`);
           params.push(updateData.phoneNumber);
+        }
+        if (updateData.district) {
+          hospitalFields.push(`district = $${paramIndex++}`);
+          params.push(updateData.district);
+        }
+        if (updateData.state) {
+          hospitalFields.push(`state = $${paramIndex++}`);
+          params.push(updateData.state);
+        }
+        if (updateData.pinCode) {
+          hospitalFields.push(`pin_code = $${paramIndex++}`);
+          params.push(updateData.pinCode);
         }
 
         if (hospitalFields.length > 0) {

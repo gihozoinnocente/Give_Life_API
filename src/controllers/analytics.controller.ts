@@ -50,6 +50,22 @@ export class AnalyticsController {
         console.log('Inventory query failed, using 0');
       }
 
+      // Total donations and units from donations
+      let totalDonations = 0;
+      let totalDonationUnits = 0;
+      try {
+        const donationsAgg = await pool.query(
+          `SELECT COUNT(*) AS total_donations, COALESCE(SUM(units), 0) AS total_units
+           FROM donations
+           WHERE hospital_id = $1 AND status = 'completed'`,
+          [hospitalId]
+        );
+        totalDonations = parseInt(donationsAgg.rows[0]?.total_donations || 0);
+        totalDonationUnits = parseInt(donationsAgg.rows[0]?.total_units || 0);
+      } catch (err) {
+        console.log('Donations aggregation failed, using 0');
+      }
+
       // Appointments today
       let appointmentsToday = 0;
       try {
@@ -72,6 +88,8 @@ export class AnalyticsController {
         totalDonors: totalDonors,
         bloodUnits: bloodUnits,
         appointmentsToday: appointmentsToday,
+        totalDonations,
+        totalDonationUnits,
       };
       
       console.log('Sending response:', responseData);

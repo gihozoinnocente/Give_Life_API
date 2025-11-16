@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database';
 import { CreateDonationDTO } from '../types';
+import jwt from 'jsonwebtoken';
+import { EmailService } from '../services/email.service';
 
 export class DonationController {
   /**
@@ -204,6 +206,21 @@ export class DonationController {
       const { id } = req.params;
       const { status } = req.body;
 
+      const currentResult = await pool.query(
+        `SELECT id, donor_id, hospital_id, status FROM donations WHERE id = $1`,
+        [id]
+      );
+
+      if (currentResult.rows.length === 0) {
+        res.status(404).json({
+          status: 'error',
+          message: 'Donation not found',
+        });
+        return;
+      }
+
+      const before = currentResult.rows[0];
+
       const result = await pool.query(
         `UPDATE donations 
          SET status = $1, updated_at = NOW()
@@ -220,10 +237,56 @@ export class DonationController {
         return;
       }
 
+      const updated = result.rows[0];
+
+      if (before.status !== 'completed' && updated.status === 'completed') {
+        // Send consent email only if:
+        // 1) Donor has not already consented for this hospital, and
+        // 2) This is the donor's first completed donation at this hospital
+        const membership = await pool.query(
+          `SELECT 1 FROM hospital_donor_memberships WHERE donor_id = $1 AND hospital_id = $2 AND consented = true`,
+          [updated.donor_id, updated.hospital_id]
+        );
+
+        if (membership.rows.length === 0) {
+          const priorDonations = await pool.query(
+            `SELECT COUNT(1) AS cnt
+             FROM donations
+             WHERE donor_id = $1
+               AND hospital_id = $2
+               AND status = 'completed'
+               AND id <> $3`,
+            [updated.donor_id, updated.hospital_id, updated.id]
+          );
+
+          const isFirstCompletedForHospital = parseInt(priorDonations.rows[0]?.cnt || '0', 10) === 0;
+
+          if (isFirstCompletedForHospital) {
+            const donorRes = await pool.query(`SELECT email FROM users WHERE id = $1`, [updated.donor_id]);
+            const hospitalRes = await pool.query(`SELECT hp.hospital_name FROM hospital_profiles hp WHERE hp.user_id = $1`, [updated.hospital_id]);
+            if (donorRes.rows.length > 0) {
+              const email = donorRes.rows[0].email as string;
+              const hospitalName = hospitalRes.rows[0]?.hospital_name || 'the hospital';
+              const secret = process.env.JWT_SECRET || 'your-secret-key';
+              const token = jwt.sign(
+                { donorId: updated.donor_id, hospitalId: updated.hospital_id, donationId: updated.id, purpose: 'hospital-opt-in' },
+                secret,
+                { expiresIn: '7d' }
+              );
+              const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+              const url = `${baseUrl}/api/hospitals/${updated.hospital_id}/opt-in?token=${encodeURIComponent(token)}`;
+              const emailService = new EmailService();
+              const html = `<p>Thank you for your donation at ${hospitalName}.</p><p>Would you like to be listed as an available donor for this hospital?</p><p><a href="${url}">Yes, list me for ${hospitalName}</a></p>`;
+              await emailService.sendMail(email, 'Confirm to be listed as a donor', html);
+            }
+          }
+        }
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'Donation status updated',
-        data: result.rows[0],
+        data: updated,
       });
     } catch (error) {
       console.error('Error updating donation:', error);

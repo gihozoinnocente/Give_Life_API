@@ -1,17 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import { DonorService } from '../services/donor.service';
+import { BadgeService } from '../services/badge.service';
 import { DonorSearchFilters } from '../types';
 
 export class DonorController {
   private donorService: DonorService;
+  private badgeService: BadgeService;
 
   constructor() {
     this.donorService = new DonorService();
+    this.badgeService = new BadgeService();
     // Bind methods to ensure correct 'this' context
     this.getAllDonors = this.getAllDonors.bind(this);
     this.getDonorById = this.getDonorById.bind(this);
     this.searchDonors = this.searchDonors.bind(this);
     this.getDonorsByBloodGroup = this.getDonorsByBloodGroup.bind(this);
+    this.getBadges = this.getBadges.bind(this);
+    this.recomputeBadges = this.recomputeBadges.bind(this);
   }
 
   // Get all donors
@@ -86,6 +91,28 @@ export class DonorController {
         message: `Retrieved donors with blood group: ${bloodGroup}`,
         data: donors,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get donor badges (earned + in-progress)
+  async getBadges(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { donorId } = req.params as any;
+      const data = await this.badgeService.computeProgress(donorId);
+      res.status(200).json({ status: 'success', data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Recompute and award new badges for a donor
+  async recomputeBadges(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { donorId } = req.params as any;
+      const newlyAwarded = await this.badgeService.awardNewBadges(donorId);
+      res.status(200).json({ status: 'success', data: { awarded: newlyAwarded } });
     } catch (error) {
       next(error);
     }

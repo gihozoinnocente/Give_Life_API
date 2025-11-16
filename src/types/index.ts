@@ -55,6 +55,9 @@ export interface HospitalProfile {
   address: string;
   headOfHospital: string;
   phoneNumber: string;
+  district?: string;
+  state?: string;
+  pinCode?: string;
 }
 
 // Admin Profile
@@ -107,6 +110,9 @@ export interface HospitalRegistrationDTO {
   address: string;
   headOfHospital: string;
   phoneNumber: string;
+  district?: string;
+  state?: string;
+  pinCode?: string;
 }
 
 export interface AdminRegistrationDTO {
@@ -220,6 +226,9 @@ export interface UpdateHospitalProfileDTO {
   address?: string;
   headOfHospital?: string;
   phoneNumber?: string;
+  district?: string;
+  state?: string;
+  pinCode?: string;
 }
 
 // Donor Search Filters

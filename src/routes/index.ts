@@ -9,6 +9,7 @@ import inventoryRoutes from './inventory.routes';
 import requestRoutes from './request.routes';
 import communityRoutes from './community.routes';
 import analyticsRoutes from './analytics.routes';
+import adminRoutes from './admin.routes';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.use('/inventory', inventoryRoutes);
 router.use('/requests', requestRoutes);
 router.use('/community', communityRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/admin', adminRoutes);
 
 // Base API info
 router.get('/', (_req, res) => {
@@ -35,6 +37,7 @@ router.get('/', (_req, res) => {
     version: API_VERSION,
     endpoints: {
       auth: '/api/auth',
+      admin: '/api/admin',
       register: {
         donor: '/api/auth/register/donor',
         hospital: '/api/auth/register/hospital',

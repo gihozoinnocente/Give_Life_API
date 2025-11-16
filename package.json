@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts",
     "test": "jest",
-    "test:email": "ts-node src/tests/email.test.ts"
+    "test:email": "ts-node src/tests/email.test.ts",
+    "seed:admin": "ts-node src/scripts/seed-admin.ts"
   },
   "keywords": [
     "blood-donation",
