@@ -11,59 +11,58 @@ console.log(`   DB_HOST: ${process.env.DB_HOST || 'localhost'}`);
 
 // Create a PostgreSQL connection pool
 // Supports both DATABASE_URL (Railway/Heroku format) and individual env vars
-const pool = new Pool(
-  process.env.DATABASE_URL
-    ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      }
-    : {
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432'),
-        database: process.env.DB_NAME || 'blood_donation',
-        user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD,
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      }
-);
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      // Force SSL when using DATABASE_URL (managed providers like Railway typically require TLS)
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    })
+  : new Pool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'blood_donation',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+    });
 
-// Validate database connection on startup
-const validateConnection = async () => {
-  try {
-    const client = await pool.connect();
-    console.log('✅ Database connection validated successfully');
-    client.release();
-  } catch (error) {
-    console.error('❌ Database connection validation failed:', error);
-    if (process.env.NODE_ENV === 'production') {
-      console.error('⚠️  CRITICAL: Production database connection failed!');
-      console.error('⚠️  Please check your DATABASE_URL environment variable in Railway');
+// Retryable validation so startup doesn't crash if DB is temporarily unavailable
+const validateConnection = async (retries = 5, delayMs = 2000): Promise<void> => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const client = await pool.connect();
+      client.release();
+      console.log('✅ Database connection validated successfully');
+      return;
+    } catch (error) {
+      console.error(`❌ Database validation attempt ${attempt} failed:`, error);
+      if (attempt < retries) {
+        console.log(`Retrying in ${delayMs}ms...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        delayMs *= 1.5;
+      } else {
+        console.error('⚠️  All database validation attempts failed. Proceeding without blocking server startup.');
+      }
     }
-    throw error;
   }
 };
 
-// Run validation
-validateConnection().catch(err => {
-  console.error('Failed to validate database connection:', err);
+// Fire-and-forget validation so import doesn't crash the process
+validateConnection().catch((err) => {
+  console.error('Unexpected error during DB validation:', err);
 });
 
-// Test database connection
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  console.log('✅ Connected to PostgreSQL database (pool)');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Unexpected error on idle client', err);
-  // Don't exit in production - just log the error
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('Exiting due to database error (development mode)');
-  }
+  console.error('Unexpected error on PostgreSQL client:', err);
 });
 
 // Query helper function

@@ -5,8 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
+    "start:prod": "npm run build && npm run start",
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "test:email": "ts-node src/tests/email.test.ts",
