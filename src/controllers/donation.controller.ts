@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import pool from '../config/database';
 import { CreateDonationDTO } from '../types';
 import jwt from 'jsonwebtoken';
@@ -73,7 +73,7 @@ export class DonationController {
   async createDonation(req: Request, res: Response): Promise<void> {
     try {
       const donationData: CreateDonationDTO = req.body;
-      const id = uuidv4();
+      const id = randomUUID();
 
       const result = await pool.query(
         `INSERT INTO donations (id, donor_id, hospital_id, date, blood_type, units, status, impact, created_at, updated_at)
