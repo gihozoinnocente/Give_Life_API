@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import pool from '../config/database';
 import { CreatePostDTO, CreateEventDTO } from '../types';
 
@@ -52,7 +52,7 @@ export class CommunityController {
   async createPost(req: Request, res: Response): Promise<void> {
     try {
       const postData: CreatePostDTO = req.body;
-      const id = uuidv4();
+      const id = randomUUID();
 
       const result = await pool.query(
         `INSERT INTO community_posts (id, author_id, content, type, likes, comments, image, created_at, updated_at)
@@ -156,7 +156,7 @@ export class CommunityController {
   async createEvent(req: Request, res: Response): Promise<void> {
     try {
       const eventData: CreateEventDTO = req.body;
-      const id = uuidv4();
+      const id = randomUUID();
 
       const result = await pool.query(
         `INSERT INTO events (id, title, description, date, time, location, organizer, attendees, created_at, updated_at)

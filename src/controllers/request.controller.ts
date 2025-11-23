@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import pool from '../config/database';
 import { UpdateBloodRequestDTO } from '../types';
 
@@ -103,7 +103,7 @@ export class RequestController {
   async createRequest(req: Request, res: Response): Promise<void> {
     try {
       const requestData: any = req.body as any;
-      const id = uuidv4();
+      const id = randomUUID();
 
       // Fetch hospital profile to derive name and location
       const hospitalId = requestData.hospitalId;

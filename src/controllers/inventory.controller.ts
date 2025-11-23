@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import pool from '../config/database';
 import { UpdateInventoryDTO, BloodType } from '../types';
 
@@ -49,7 +49,7 @@ export class InventoryController {
       let result;
       if (checkResult.rows.length === 0) {
         // Create new inventory record
-        const id = uuidv4();
+        const id = randomUUID();
         const units = updateData.operation === 'add' ? updateData.units : 0;
         
         result = await pool.query(
@@ -112,7 +112,7 @@ export class InventoryController {
       const inventoryRecords = [];
 
       for (const bloodType of bloodTypes) {
-        const id = uuidv4();
+        const id = randomUUID();
         const result = await pool.query(
           `INSERT INTO blood_inventory (id, hospital_id, blood_type, units, critical_level, status, last_updated)
            VALUES ($1, $2, $3, $4, $5, $6, NOW())
