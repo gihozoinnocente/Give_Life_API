@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import pool from '../config/database';
 import { CreateAppointmentDTO, UpdateAppointmentDTO } from '../types';
 import { BadgeService } from '../services/badge.service';
@@ -209,7 +209,7 @@ export class AppointmentController {
         return;
       }
 
-      const id = uuidv4();
+      const id = randomUUID();
 
       const result = await pool.query(
         `INSERT INTO appointments (id, donor_id, hospital_id, date, time, type, status, notes, created_at, updated_at)
