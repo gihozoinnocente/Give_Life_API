@@ -23,6 +23,7 @@ export class AuthController {
     this.login = this.login.bind(this);
     this.getProfile = this.getProfile.bind(this);
     this.updateProfile = this.updateProfile.bind(this);
+    this.resetUserPassword = this.resetUserPassword.bind(this);
   }
 
   // Register Donor
@@ -366,6 +367,54 @@ export class AuthController {
         status: 'success',
         message: 'Profile updated successfully',
         data: profile,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Admin: Reset user password by email
+  async resetUserPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { email, newPassword, confirmPassword } = req.body;
+
+      // Validate required fields
+      if (!email || !newPassword || !confirmPassword) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Email, new password, and confirm password are required',
+        });
+        return;
+      }
+
+      // Validate password confirmation
+      if (newPassword !== confirmPassword) {
+        res.status(400).json({
+          status: 'error',
+          message: 'New password and confirm password do not match',
+        });
+        return;
+      }
+
+      // Validate password length
+      if (newPassword.length < 6) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Password must be at least 6 characters long',
+        });
+        return;
+      }
+
+      // Reset the password
+      await this.authService.resetUserPasswordByEmail(email, newPassword);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Password reset successfully',
       });
     } catch (error) {
       next(error);

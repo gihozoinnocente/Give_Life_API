@@ -55,6 +55,10 @@ For questions or support, please contact our team.
       name: 'Notifications',
       description: 'Blood request notifications and management endpoints',
     },
+    {
+      name: 'Admin',
+      description: 'Admin-only endpoints for system management',
+    },
   ],
   components: {
     securitySchemes: {

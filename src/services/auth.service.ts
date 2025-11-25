@@ -343,13 +343,14 @@ export class AuthService {
 
   // Login
   async login(data: LoginDTO): Promise<AuthResponse> {
-    // Find user by email
+    // Find user by email (case-insensitive for better UX)
     const result = await query(
-      'SELECT id, email, password, role, is_active FROM users WHERE email = $1',
+      'SELECT id, email, password, role, is_active FROM users WHERE LOWER(email) = LOWER($1)',
       [data.email]
     );
 
     if (result.rows.length === 0) {
+      console.log(`Login failed: User not found with email: ${data.email}`);
       throw new Error('Invalid email or password');
     }
 
@@ -357,6 +358,7 @@ export class AuthService {
 
     // Check if user is active
     if (!user.is_active) {
+      console.log(`Login failed: Account is deactivated for email: ${data.email}`);
       throw new Error('Account is deactivated');
     }
 
@@ -367,6 +369,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      console.log(`Login failed: Invalid password for email: ${data.email}`);
       throw new Error('Invalid email or password');
     }
 
@@ -607,5 +610,30 @@ export class AuthService {
 
     // Return updated profile
     return this.getUserProfile(userId, role);
+  }
+
+  // Admin: Reset user password by email
+  async resetUserPasswordByEmail(
+    email: string,
+    newPassword: string
+  ): Promise<void> {
+    // Find user by email
+    const result = await query(
+      'SELECT id, email, role FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('User not found with the provided email');
+    }
+
+    // Hash the new password
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    // Update the password
+    await query('UPDATE users SET password = $1 WHERE email = $2', [
+      hashedPassword,
+      email,
+    ]);
   }
 }
