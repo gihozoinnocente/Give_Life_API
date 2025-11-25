@@ -24,6 +24,7 @@ const corsOptions = {
     const allowedOrigins = [
       /^http:\/\/localhost:\d+$/, // Allow any localhost port in development
       'https://gihozoinnocente.github.io', // GitHub Pages frontend
+      /^https:\/\/.*\.github\.io$/, // Any GitHub Pages subdomain
       'https://givelifeapi.up.railway.app', // Backend domain (for Swagger UI)
     ];
     
@@ -38,7 +39,9 @@ const corsOptions = {
     if (isAllowed || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Log the rejected origin for debugging
+      console.warn(`⚠️  CORS: Origin "${origin}" not allowed`);
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -49,16 +52,9 @@ const corsOptions = {
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'"],
-      imgSrc: ["'self'"],
-      connectSrc: ["'self'"],
-    },
-  } : false, // Disable CSP in development for easier testing
+  contentSecurityPolicy: false, // Disable CSP to avoid blocking API requests from frontend
   crossOriginEmbedderPolicy: false, // Allow cross-origin requests
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resource sharing
 }));
 
 app.use(cors(corsOptions));
