@@ -14,8 +14,11 @@ const pool = new Pool(
   process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        // Railway PostgreSQL requires SSL in production
-        ssl: process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('railway') 
+        // Railway PostgreSQL requires SSL - detect Railway URLs
+        ssl: process.env.NODE_ENV === 'production' || 
+             process.env.DATABASE_URL?.includes('railway') ||
+             process.env.DATABASE_URL?.includes('.railway.app') ||
+             process.env.DATABASE_URL?.includes('.railway.internal')
           ? { rejectUnauthorized: false } 
           : false,
         max: 20,
