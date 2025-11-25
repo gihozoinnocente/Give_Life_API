@@ -14,40 +14,58 @@ const pool = new Pool(
   process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        // Railway PostgreSQL requires SSL in production
+        ssl: process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('railway') 
+          ? { rejectUnauthorized: false } 
+          : false,
         max: 20,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        connectionTimeoutMillis: 10000, // 10 seconds for local connections
       }
     : {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
         database: process.env.DB_NAME || 'blood_donation',
         user: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD,
+        // Coerce environment value to string (defensive) to avoid pg SASL errors
+        password: typeof process.env.DB_PASSWORD === 'undefined' ? undefined : String(process.env.DB_PASSWORD),
         max: 20,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        connectionTimeoutMillis: 10000, // 10 seconds for local connections
       }
 );
 
-// Validate database connection on startup
+// Validate database connection on startup (non-blocking)
 const validateConnection = async () => {
   try {
     const client = await pool.connect();
+    const result = await client.query('SELECT NOW()');
     console.log('✅ Database connection validated successfully');
+    console.log(`   Database time: ${result.rows[0].now}`);
     client.release();
-  } catch (error) {
-    console.error('❌ Database connection validation failed:', error);
+    return true;
+  } catch (error: any) {
+    console.error('❌ Database connection validation failed:', error.message);
+    if (error.code === 'ECONNREFUSED') {
+      console.error('⚠️  Could not connect to PostgreSQL. Please ensure:');
+      console.error('   1. PostgreSQL service is running');
+      console.error('   2. Database credentials in .env are correct');
+      console.error('   3. Database "blood_donation" exists');
+    } else if (error.code === '28P01') {
+      console.error('⚠️  Authentication failed. Please check DB_USER and DB_PASSWORD in .env');
+    } else if (error.code === '3D000') {
+      console.error('⚠️  Database does not exist. Please create the database:');
+      console.error('   CREATE DATABASE blood_donation;');
+    }
     if (process.env.NODE_ENV === 'production') {
       console.error('⚠️  CRITICAL: Production database connection failed!');
-      console.error('⚠️  Please check your DATABASE_URL environment variable in Railway');
+      console.error('⚠️  Please check your DATABASE_URL environment variable');
     }
-    throw error;
+    return false;
   }
 };
 
-// Run validation
+// Run validation (non-blocking - won't prevent server from starting)
 validateConnection().catch(err => {
   console.error('Failed to validate database connection:', err);
 });

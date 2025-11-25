@@ -17,19 +17,39 @@ const PORT = process.env.PORT || 3000;
 
 // CORS Configuration
 const corsOptions = {
-  origin: [
-    'http://localhost:5173', // Local frontend
-    'https://gihozoinnocente.github.io', // GitHub Pages frontend
-    'https://givelifeapi.up.railway.app', // Backend domain (for Swagger UI)
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      /^http:\/\/localhost:\d+$/, // Allow any localhost port in development
+      'https://gihozoinnocente.github.io', // GitHub Pages frontend
+      'https://givelifeapi.up.railway.app', // Backend domain (for Swagger UI)
+    ];
+    
+    // Check if origin matches allowed patterns
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
+  optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: {
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
@@ -37,7 +57,8 @@ app.use(helmet({
       imgSrc: ["'self'"],
       connectSrc: ["'self'"],
     },
-  },
+  } : false, // Disable CSP in development for easier testing
+  crossOriginEmbedderPolicy: false, // Allow cross-origin requests
 }));
 
 app.use(cors(corsOptions));
