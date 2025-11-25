@@ -22,10 +22,14 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      /^http:\/\/localhost:\d+$/, // Allow any localhost port in development
+      /^http:\/\/localhost(:\d+)?$/, // Allow any localhost with optional port
+      /^https?:\/\/localhost(:\d+)?$/, // Allow both http and https for localhost
       'https://gihozoinnocente.github.io', // GitHub Pages frontend
-      /^https:\/\/.*\.github\.io$/, // Any GitHub Pages subdomain
+      /^https:\/\/.*\.github\.io(\/.*)?$/, // Any GitHub Pages subdomain with optional path
       'https://givelifeapi.up.railway.app', // Backend domain (for Swagger UI)
+      'http://localhost:3000', // Explicitly allow local development
+      'http://localhost:5173', // Common Vite dev server port
+      'http://localhost:8080', // Common alternative dev server port
     ];
     
     // Check if origin matches allowed patterns
@@ -44,10 +48,31 @@ const corsOptions = {
       callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers',
+    'X-API-Key',
+    'X-Requested-With'
+  ],
+  exposedHeaders: [
+    'Content-Range',
+    'X-Content-Range',
+    'Content-Disposition',
+    'Content-Length',
+    'Authorization',
+    'X-Total-Count'
+  ],
   credentials: true,
-  optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 // Middleware
