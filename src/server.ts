@@ -15,11 +15,32 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
+// CORS Configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:5173', // Local frontend
+    'https://gihozoinnocente.github.io', // GitHub Pages frontend
+    'https://givelifeapi.up.railway.app', // Backend domain (for Swagger UI)
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable for Swagger UI
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'"],
+      connectSrc: ["'self'"],
+    },
+  },
 }));
-app.use(cors());
+
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -28,7 +28,9 @@ For questions or support, please contact our team.
   },
   servers: [
     {
-      url: process.env.API_URL || 'http://localhost:3000',
+      url: process.env.NODE_ENV === 'production' 
+        ? 'https://givelifeapi.up.railway.app' 
+        : 'http://localhost:3000',
       description: process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server',
     },
   ],
