@@ -9,12 +9,49 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
+    inputs:
+      clear_cache:
+        description: 'Clear all caches before running'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
+  # Cache cleanup job (runs first if triggered)
+  clear-cache:
+    name: Clear Cache
+    runs-on: ubuntu-latest
+    if: github.event.inputs.clear_cache == 'true'
+    
+    steps:
+      - name: Clear npm cache
+        run: npm cache clean --force
+      
+      - name: Clear GitHub Actions cache
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const caches = await github.rest.actions.getActionsCacheList({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+            for (const cache of caches.data.actions_caches) {
+              console.log(`Deleting cache: ${cache.key}`)
+              await github.rest.actions.deleteActionsCacheById({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                cache_id: cache.id,
+              })
+            }
+            console.log("All caches cleared!")
+
   # Continuous Integration Job
   test-and-build:
     name: Test and Build
     runs-on: ubuntu-latest
+    needs: [clear-cache]
+    if: always() && (needs.clear-cache.result == 'success' || needs.clear-cache.result == 'skipped')
     
     strategy:
       matrix:
@@ -23,6 +60,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Clear local npm cache
+        run: npm cache clean --force
       
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -70,6 +110,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Clean deployment environment
+        run: |
+          # Clean npm cache
+          npm cache clean --force
+          
+          # Remove any existing Railway CLI installation
+          npm uninstall -g @railway/cli || true
+          
+          # Clean Railway config
+          rm -rf ~/.railway || true
+          
+          echo "Environment cleaned successfully!"
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -78,10 +131,15 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
       
+      - name: Verify Railway CLI
+        run: railway --version
+      
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'web' }}
+        run: |
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'web' }}
       
       - name: Deployment notification
         run: |
